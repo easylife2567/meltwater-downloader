@@ -1,0 +1,32 @@
+site:
+  url: "https://app.meltwater.com"
+  login_url: "https://app.meltwater.com/login"
+  feed_url: "https://app.meltwater.com"
+
+auth:
+  username: "${MELTWATER_USERNAME}"
+  password: "${MELTWATER_PASSWORD}"
+  username_selector: "input[type='email'], input[name='email']"
+  password_selector: "input[type='password'], input[name='password']"
+  submit_selector: "button[type='submit']"
+  next_button: "button:has-text('Next'), button:has-text('Continue')"
+  login_button: "button:has-text('Login'), button:has-text('Sign in'), button[type='submit']"
+  success_indicator: "[class*='dashboard'], [class*='home'], [class*='user-menu'], [class*='profile-menu']"
+
+scraper:
+  headless: true  # true=无头模式（服务器），false=显示浏览器（调试）
+  search_id: "28893311"
+  days_ago: 1
+  scroll_count: 10
+  scroll_delay: 1.5
+  item_selector: ".feed-item"
+  title_selector: ".item-title"
+  content_selector: ".item-content"
+  author_selector: ".item-author"
+  time_selector: ".item-time"
+  link_selector: "a.item-link"
+
+output:
+  dir: "data"
+  format: "json"  # 支持: json, csv, excel, xlsx
+  filename: "meltwater_feed"
