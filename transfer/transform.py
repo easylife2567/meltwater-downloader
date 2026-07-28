@@ -6,7 +6,9 @@
 示例:
     python -m transfer.transform data/meltwater_feed_20260728_001835.xlsx
     python -m transfer.transform data/meltwater_feed_20260728_001835.xlsx --name "我的搜索"
-    python -m transfer.transform data/meltwater_feed_20260728_001835.xlsx -o output/result.xlsx
+    python -m transfer.transform data/meltwater_feed_20260728_001835.xlsx -o data/transfer/自定义名.xlsx
+
+默认输出到 data/transfer/<原文件名>_transformed.xlsx
 """
 
 import argparse
@@ -272,11 +274,12 @@ def transform_file(
     # 自动列宽（取前 100 行估算）
     _auto_column_width(ws_out, target_headers)
 
-    # 确定输出路径
+    # 确定输出路径（默认输出到 data/transfer/）
     if output_path:
         dst = Path(output_path)
     else:
-        dst = src.parent / f"{src.stem}_transformed.xlsx"
+        transfer_dir = src.parent / "transfer"
+        dst = transfer_dir / f"{src.stem}_transformed.xlsx"
     dst.parent.mkdir(parents=True, exist_ok=True)
 
     wb_out.save(dst)
