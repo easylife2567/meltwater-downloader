@@ -38,7 +38,17 @@ def save(items: List[Dict[str, Any]], config: dict) -> str:
     elif fmt == "csv":
         _save_csv(items, filepath)
     elif fmt == "excel" or fmt == "xlsx":
-        _save_excel(items, filepath.replace(f".{fmt}", ".xlsx"))
+        xlsx_path = filepath.replace(f".{fmt}", ".xlsx")
+        _save_excel(items, xlsx_path)
+        filepath = xlsx_path  # 修正为实际扩展名
+
+        # 自动执行格式转换
+        try:
+            from transfer.transform import transform_file
+            transform_name = out_cfg.get("transform_name", "")
+            transform_file(xlsx_path, input_name=transform_name)
+        except Exception as e:
+            logger.warning(f"Auto-transform skipped: {e}")
     else:
         raise ValueError(f"Unsupported format: {fmt}")
 
@@ -46,7 +56,8 @@ def save(items: List[Dict[str, Any]], config: dict) -> str:
     return filepath
 
 
-def save_excel(items: List[Dict[str, Any]], output_dir: str = "data", filename: str = None) -> str:
+def save_excel(items: List[Dict[str, Any]], output_dir: str = "data", filename: str = None,
+               auto_transform: bool = True, transform_name: str = "") -> str:
     """
     将数据保存为Excel文件
 
@@ -54,21 +65,32 @@ def save_excel(items: List[Dict[str, Any]], output_dir: str = "data", filename: 
         items: 数据列表
         output_dir: 输出目录
         filename: 文件名（可选，默认自动生成）
+        auto_transform: 是否自动执行格式转换
+        transform_name: 转换时写入 Input Name 列的值
 
     Returns:
         str: 输出文件路径
     """
     output_dir = _resolve_dir(output_dir)
     os.makedirs(output_dir, exist_ok=True)
-    
+
     if filename is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"meltwater_feed_{timestamp}.xlsx"
-    
+
     filepath = os.path.join(output_dir, filename)
     _save_excel(items, filepath)
-    
+
     logger.info(f"Saved {len(items)} items -> {filepath}")
+
+    # 自动执行格式转换
+    if auto_transform:
+        try:
+            from transfer.transform import transform_file
+            transform_file(filepath, input_name=transform_name)
+        except Exception as e:
+            logger.warning(f"Auto-transform skipped: {e}")
+
     return filepath
 
 
@@ -142,10 +164,14 @@ def _save_excel(items: List[Dict[str, Any]], path: str):
         from openpyxl.utils import get_column_letter
         
         for idx, col in enumerate(df.columns, 1):
-            max_length = max(
-                df[col].astype(str).apply(len).max(),
-                len(str(col))
-            )
+            try:
+                col_str = df[col].fillna("").astype(str)
+                max_length = max(
+                    col_str.apply(len).max(),
+                    len(str(col)),
+                )
+            except Exception:
+                max_length = len(str(col))
             # 限制最大宽度为100
             adjusted_width = min(max_length + 2, 100)
             column_letter = get_column_letter(idx)
